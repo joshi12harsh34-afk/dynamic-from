@@ -1,0 +1,53 @@
+# ======================
+# Python
+# ======================
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# SQLite
+*.sqlite3
+
+# ======================
+# Node / Frontend
+# ======================
+
+node_modules/
+frontend/node_modules/
+
+# Build folders
+dist/
+build/
+.next/
+out/
+
+# ======================
+# Project Specific
+# ======================
+
+# Uploads folder (generated files)
+uploads/
+
+# Tesseract trained data (very large)
+eng.traineddata
+
+# ======================
+# Editor / OS
+# ======================
+
+.vscode/
+.DS_Store
