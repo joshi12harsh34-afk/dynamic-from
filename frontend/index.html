@@ -1,8 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dynamic Form Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Data Extractor | Professional Scraper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Professional Color Palette */
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #6366f1;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            
+            /* Glassmorphism & Effects */
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            
+            /* Spacing */
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -10,246 +41,470 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            padding: 20px;
-            max-width: 1200px;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            background-color: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.025em;
+        }
+
+        .app-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            min-height: calc(100vh - 73px);
+            max-width: 1600px;
             margin: 0 auto;
-            background-color: #f5f5f5;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
+        /* Left Panel - Projects Sidebar */
+        .left-panel {
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2rem;
+            height: calc(100vh - 73px);
+            position: sticky;
+            top: 73px;
+            overflow-y: auto;
         }
 
-        h2 {
-            color: #555;
-            margin: 30px 0 15px 0;
-            font-size: 22px;
+        .left-panel h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #refreshProjectsBtn {
+            margin-left: auto;
+        }
+
+        .projects-toolbar {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Right Panel - Main Content */
+        .right-panel {
+            padding: 2.5rem;
+            background-color: var(--bg);
         }
 
         .section {
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s ease;
         }
 
+        .section:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Forms & Inputs */
         .input-group {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 0.75rem;
         }
 
-        input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+        input[type="text"], input[type="url"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background-color: var(--bg);
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            color: var(--text-main);
         }
 
-        input[type="text"]:focus {
+        input:focus, textarea:focus {
             outline: none;
-            border-color: #4CAF50;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            background-color: var(--surface);
         }
 
+        /* Buttons */
         button {
-            padding: 12px 24px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.625rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: var(--radius-md);
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background-color 0.3s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            gap: 0.5rem;
         }
 
-        button:hover {
-            background-color: #45a049;
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--bg);
+            border-color: var(--text-muted);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            filter: brightness(0.95);
         }
 
         button:disabled {
-            background-color: #cccccc;
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none !important;
         }
 
-        .divider {
-            text-align: center;
-            margin: 30px 0;
-            color: #999;
-            font-weight: 500;
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            background: rgba(15, 23, 42, 0.38);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            width: min(680px, 100%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 1.5rem;
             position: relative;
         }
 
-        .divider::before,
-        .divider::after {
-            content: '';
+        .modal-content h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .close {
             position: absolute;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #ddd;
+            top: 0.75rem;
+            right: 0.9rem;
+            font-size: 1.5rem;
+            line-height: 1;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .close:hover {
+            color: var(--text-main);
+        }
+
+        /* Divider */
+        .divider {
+            position: relative;
+            text-align: center;
+            margin: 2.5rem 0;
         }
 
         .divider::before {
+            content: "";
+            position: absolute;
+            top: 50%;
             left: 0;
-        }
-
-        .divider::after {
             right: 0;
+            height: 1px;
+            background-color: var(--border);
+            z-index: 1;
         }
 
-        /* File Upload Styles */
-        .upload-container {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 40px;
+        .divider span {
+            position: relative;
+            z-index: 2;
+            background-color: var(--bg);
+            padding: 0 1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* File Upload */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 3rem 2rem;
             text-align: center;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
             cursor: pointer;
-            background-color: #fafafa;
+            background-color: var(--bg);
         }
 
-        .upload-container:hover {
-            border-color: #4CAF50;
-            background-color: #f0f8f0;
-        }
-
-        .upload-container.dragover {
-            border-color: #4CAF50;
-            background-color: #e8f5e9;
-            transform: scale(1.02);
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(79, 70, 229, 0.04);
         }
 
         .upload-icon {
-            font-size: 48px;
-            color: #4CAF50;
-            margin-bottom: 15px;
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            color: var(--primary);
         }
 
         .upload-text {
-            color: #666;
-            margin-bottom: 10px;
-            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
 
         .upload-hint {
-            color: #999;
-            font-size: 14px;
+            font-size: 0.875rem;
+            color: var(--text-muted);
         }
 
-        #fileInput {
-            display: none;
+        /* Project Cards */
+        .project-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
         }
 
-        .file-info {
-            margin-top: 15px;
-            padding: 15px;
-            background-color: #e8f5e9;
-            border-radius: 6px;
-            display: none;
+        .project-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-sm);
         }
 
-        .file-info.show {
+        .project-name {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .project-actions button {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        /* Data Visualization */
+        .extracted-data-container {
+            margin-top: 1.5rem;
+        }
+
+        .data-field {
+            margin-bottom: 1.25rem;
+        }
+
+        .field-label {
             display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
         }
 
-        .file-name {
-            font-weight: 500;
-            color: #2e7d32;
-            margin-bottom: 5px;
+        /* Results / JSON View */
+        .result-code {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.7;
         }
 
-        .file-size {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4CAF50;
+        /* Loading Spinner */
+        .spinner {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        #formContainer {
-            min-height: 100px;
-        }
-
-        #formContainer label {
-            display: block;
-            margin-top: 15px;
-            font-weight: 500;
-            color: #333;
-        }
-
-        #formContainer input[type="text"],
-        #formContainer textarea {
-            width: 100%;
-            max-width: 600px;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        #formContainer textarea {
-            resize: vertical;
-            min-height: 100px;
+        /* Mobile Adjustments */
+        @media (max-width: 1024px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+            .left-panel {
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Dynamic Data Extractor</h1>
-
-    <!-- URL Input Section -->
-    <div class="section">
-        <h2>Extract from URL</h2>
-        <div class="input-group">
-            <input type="text" id="urlInput" placeholder="Enter URL here (e.g., https://example.com)"/>
-            <button id="fetchBtn">Fetch</button>
+    <header class="header">
+        <h1>Dynamic Data Extractor</h1>
+        <div class="user-meta">
+            <span class="status-badge" id="appStatus">Ready</span>
         </div>
-    </div>
+    </header>
 
-    <!-- Divider -->
-    <div class="divider">OR</div>
+    <main class="app-layout">
+        <aside class="left-panel">
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                Projects
+                <button id="refreshProjectsBtn" class="btn-outline" onclick="loadProjects()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </button>
+            </h2>
+            <div id="projectsContainer">
+                <div id="projectsList">
+                    <!-- Projects will be injected here -->
+                </div>
+            </div>
+        </aside>
 
-    <!-- File Upload Section -->
-    <div class="section">
-        <h2>Extract from File</h2>
-        <div class="upload-container" id="uploadContainer">
-            <div class="upload-icon">📄</div>
-            <div class="upload-text">Click to upload or drag and drop</div>
-            <div class="upload-hint">Supports PDF, TXT, JSON, CSV, Images (JPG, PNG, GIF, etc.)</div>
-            <input type="file" id="fileInput" accept=".pdf,.txt,.json,.csv,.md,.jpg,.jpeg,.png,.gif,.webp,.bmp"/>
-        </div>
-        <div class="file-info" id="fileInfo">
-            <div class="file-name" id="fileName"></div>
-            <div class="file-size" id="fileSize"></div>
-        </div>
-        <button id="uploadBtn" style="margin-top: 15px; display: none;">Extract Data</button>
-    </div>
+        <section class="right-panel">
+            <!-- URL Input Section -->
+            <div class="section" id="urlSection">
+                <div class="section-header">
+                    <h2>Extract from URL</h2>
+                </div>
+                <div class="input-group">
+                    <input type="url" id="urlInput" placeholder="https://example.com/real-estate-listing" />
+                    <button id="fetchBtn" class="btn-primary">Fetch Data</button>
+                </div>
+            </div>
 
-    <!-- Generated Form Section -->
-    <div class="section">
-        <h2>Extracted Data</h2>
-        <div id="formContainer"></div>
-    </div>
+            <div class="divider" id="extractorDivider">
+                <span>OR</span>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="section" id="fileSection">
+                <div class="section-header">
+                    <h2>Extract from File</h2>
+                </div>
+                <div class="upload-area" id="uploadContainer">
+                    <div class="upload-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    </div>
+                    <div class="upload-text">Drop your file here or click to browse</div>
+                    <div class="upload-hint">Supports PDF, JSON, CSV, and Images (JPG, PNG)</div>
+                    <input type="file" id="fileInput" hidden accept=".pdf,.txt,.json,.csv,.md,.jpg,.jpeg,.png,.gif,.webp,.bmp"/>
+                </div>
+                
+                <div id="fileInfo" style="display: none; margin-top: 1.5rem; padding: 1rem; background: var(--bg); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                    <div id="fileName" style="font-weight: 600; color: var(--primary);"></div>
+                    <div id="fileSize" style="font-size: 0.75rem; color: var(--text-muted);"></div>
+                    <button id="uploadBtn" class="btn-primary" style="margin-top: 1rem; width: 100%;">Extract from File</button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="section" id="resultsSection">
+                <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <h2>Extracted Data</h2>
+                    <button id="showExtractorBtn" class="btn-outline" style="display:none;">Back to Extractor</button>
+                </div>
+                <div id="formContainer" class="extracted-data-container">
+                    <p style="color: var(--text-muted); font-style: italic;">No data extracted yet. Enter a URL or upload a file to begin.</p>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script src="app.js"></script>
 </body>

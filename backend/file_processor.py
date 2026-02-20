@@ -1,3 +1,4 @@
+# file_processor.py
 import os
 import re
 from datetime import datetime
@@ -5,6 +6,7 @@ from pathlib import Path
 from PIL import Image, ImageFilter, ImageEnhance
 import pdfplumber
 from playwright.async_api import async_playwright
+
 try:
     import pytesseract
     TESSERACT_AVAILABLE = True
@@ -38,7 +40,73 @@ except ImportError:
     print("Warning: pytesseract not available. OCR features will be disabled.")
 from text_parser import parse_extracted_text
 from column_type_analyzer import analyze_csv_columns
-from openai_service import extract_fields_with_openai
+from openai_service import extract_fields_with_openai, extract_real_estate_project
+
+
+def format_parsed_data_as_text(parsed_data):
+    """
+    Convert parsed structured data into formatted text representation
+    that can be passed to AI for better extraction
+    """
+    if not parsed_data or not isinstance(parsed_data, dict):
+        return ""
+    
+    text_lines = []
+    
+    # Process sections if available
+    if 'sections' in parsed_data and parsed_data['sections']:
+        for section in parsed_data['sections']:
+            if section.get('title'):
+                text_lines.append(f"\n{section['title']}")
+                text_lines.append("=" * len(section['title']))
+            
+            if section.get('fields'):
+                for field in section['fields']:
+                    label = field.get('label', '')
+                    value = field.get('value', '')
+                    field_type = field.get('type', 'text')
+                    
+                    if label and value:
+                        # Format based on field type
+                        if field_type == 'number':
+                            currency = field.get('currency', '')
+                            unit = field.get('unit', '')
+                            formatted_value = f"{currency} {value}".strip() if currency else value
+                            formatted_value = f"{formatted_value} {unit}".strip() if unit else formatted_value
+                            text_lines.append(f"{label}: {formatted_value}")
+                        elif field_type == 'date':
+                            text_lines.append(f"{label}: {value}")
+                        elif field_type in ['email', 'tel']:
+                            text_lines.append(f"{label}: {value}")
+                        else:
+                            text_lines.append(f"{label}: {value}")
+                    elif label:
+                        text_lines.append(label)
+                    elif value:
+                        text_lines.append(value)
+    
+    # Fallback to fields if sections not available
+    elif 'fields' in parsed_data and parsed_data['fields']:
+        for field in parsed_data['fields']:
+            label = field.get('label', '')
+            value = field.get('value', '')
+            field_type = field.get('type', 'text')
+            
+            if label and value:
+                if field_type == 'number':
+                    currency = field.get('currency', '')
+                    unit = field.get('unit', '')
+                    formatted_value = f"{currency} {value}".strip() if currency else value
+                    formatted_value = f"{formatted_value} {unit}".strip() if unit else formatted_value
+                    text_lines.append(f"{label}: {formatted_value}")
+                else:
+                    text_lines.append(f"{label}: {value}")
+            elif label:
+                text_lines.append(label)
+            elif value:
+                text_lines.append(value)
+    
+    return "\n".join(text_lines)
 
 
 def get_mime_type(ext):
@@ -107,6 +175,7 @@ async def process_file(file_path, mime_type):
     stats = file_path_obj.stat()
     
     base_data = {
+        'outputFormat': 'json',
         'filename': file_path_obj.name,
         'fileSize': stats.st_size,
         'fileType': mime_type,
@@ -164,26 +233,43 @@ async def process_pdf(file_path, base_data):
                     'ModDate': str(pdf.metadata.get('ModDate', ''))
                 }
         
-        # Use OpenAI to extract structured fields from PDF text
-        ai_extracted_data = None
+        # Use OpenAI to extract real estate project data from PDF text
+        real_estate_data = None
         if text_content and len(text_content) > 0:
             try:
-                ai_extracted_data = await extract_fields_with_openai(text_content)
+                real_estate_data = await extract_real_estate_project(text_content)
+            except Exception as ai_error:
+                print(f'Real estate extraction failed for PDF: {ai_error}')
+        
+        # Parse text first to get structured data
+        parsed_form_data = None
+        parser_text = None
+        if text_content and len(text_content) > 0:
+            try:
+                parsed_form_data = parse_extracted_text(text_content)
+                # Convert parsed data to formatted text for AI
+                parser_text = format_parsed_data_as_text(parsed_form_data)
+            except Exception as parse_error:
+                print(f'Text parsing failed for PDF: {parse_error}')
+        
+        # Fallback: Use general OpenAI extraction if real estate extraction failed
+        # Pass parser text instead of raw OCR text
+        ai_extracted_data = None
+        if not real_estate_data and parser_text and len(parser_text) > 0:
+            try:
+                ai_extracted_data = await extract_fields_with_openai(parser_text)
             except Exception as ai_error:
                 print(f'OpenAI extraction failed for PDF: {ai_error}')
         
-        # Fallback: Use text parser if OpenAI extraction failed or is not available
-        parsed_form_data = None
+        # Use the best available data
         if text_content and len(text_content) > 0:
-            if ai_extracted_data:
-                # Use AI extracted data if available
+            if real_estate_data:
+                # Use real estate extracted data if available
+                parsed_form_data = real_estate_data
+            elif ai_extracted_data:
+                # Use general AI extracted data if available
                 parsed_form_data = ai_extracted_data
-            else:
-                # Fallback to regex-based text parser
-                try:
-                    parsed_form_data = parse_extracted_text(text_content)
-                except Exception as parse_error:
-                    print(f'Text parsing failed for PDF: {parse_error}')
+            # parsed_form_data already contains parser data if AI extraction failed
         
         file_path_obj = Path(file_path)
         return {
@@ -201,8 +287,9 @@ async def process_pdf(file_path, base_data):
             'textLength': len(text_content),
             'metadata': metadata,
             'parsedFormData': parsed_form_data,
-            'aiExtracted': bool(ai_extracted_data),
-            'documentType': ai_extracted_data.get('documentType') if ai_extracted_data else None
+            'realEstateProject': real_estate_data,
+            'aiExtracted': bool(real_estate_data or ai_extracted_data),
+            'documentType': 'real_estate_project' if real_estate_data else (ai_extracted_data.get('documentType') if ai_extracted_data else None)
         }
     except Exception as e:
         raise Exception(f'PDF processing failed: {str(e)}')
@@ -391,14 +478,21 @@ async def process_image(file_path, base_data):
             # Parse extracted text to generate structured form data (fallback method)
             # Only parse if we have extracted text and no OCR error
             parsed_form_data = None
-            if extracted_text and len(extracted_text) > 0 and not ocr_error_message:
-                parsed_form_data = parse_extracted_text(extracted_text)
-            
-            # Use OpenAI to extract structured fields (more accurate)
-            ai_extracted_data = None
+            parser_text = None
             if extracted_text and len(extracted_text) > 0 and not ocr_error_message:
                 try:
-                    ai_extracted_data = await extract_fields_with_openai(extracted_text)
+                    parsed_form_data = parse_extracted_text(extracted_text)
+                    # Convert parsed data to formatted text for AI
+                    parser_text = format_parsed_data_as_text(parsed_form_data)
+                except Exception as parse_error:
+                    print(f'Text parsing failed for image: {parse_error}')
+            
+            # Use OpenAI to extract structured fields (more accurate)
+            # Pass parser text instead of raw OCR text
+            ai_extracted_data = None
+            if parser_text and len(parser_text) > 0 and not ocr_error_message:
+                try:
+                    ai_extracted_data = await extract_fields_with_openai(parser_text)
                 except Exception as ai_error:
                     print(f'OpenAI extraction failed: {ai_error}')
                     # Continue with fallback parsing
